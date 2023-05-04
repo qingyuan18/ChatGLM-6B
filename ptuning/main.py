@@ -25,7 +25,7 @@ import json
 
 import numpy as np
 from datasets import load_dataset
-import jieba 
+import jieba
 from rouge_chinese import Rouge
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import torch
@@ -153,7 +153,7 @@ def main():
     prompt_column = data_args.prompt_column
     response_column = data_args.response_column
     history_column = data_args.history_column
-    
+
     # Temporarily set max_target_length for training.
     max_target_length = data_args.max_target_length
 
@@ -220,7 +220,7 @@ def main():
                 context_length = input_ids.index(tokenizer.bos_token_id)
                 mask_position = context_length - 1
                 labels = [-100] * context_length + input_ids[mask_position+1:]
-                
+
                 pad_len = max_seq_length - len(input_ids)
                 input_ids = input_ids + [tokenizer.pad_token_id] * pad_len
                 labels = labels + [tokenizer.pad_token_id] * pad_len
@@ -231,7 +231,7 @@ def main():
                 model_inputs["labels"].append(labels)
 
         return model_inputs
-    
+
     def print_dataset_example(example):
         print("input_ids",example["input_ids"])
         print("inputs", tokenizer.decode(example["input_ids"]))
@@ -327,7 +327,7 @@ def main():
             rouge = Rouge()
             scores = rouge.get_scores(' '.join(hypothesis) , ' '.join(reference))
             result = scores[0]
-            
+
             for k, v in result.items():
                 score_dict[k].append(round(v["f"] * 100, 4))
             bleu_score = sentence_bleu([list(label)], list(pred), smoothing_function=SmoothingFunction().method3)
@@ -379,6 +379,19 @@ def main():
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
         trainer.save_state()
+        print("------saving model!-----")
+        save_model_dir = os.environ['OUTPUT_DIR']
+        tokenizer.save_pretrained(save_model_dir)
+        trainer.save_model(save_model_dir)
+        print("------model is saved!-----")
+
+        #Note: we just use the rank 0 process to upload the trained model assets to S3 by s5cmd command.
+        WORLD_RANK = int(os.environ['RANK'])
+        if WORLD_RANK == 0:
+            os.system("./s5cmd sync {0} {1}".format(save_model_dir, os.environ['MODEL_OUTPUT_S3_PATH']))
+
+    #Note: we should sync with every ranker and ensure rank 0 uploading the model assets successfully. 
+    torch.distributed.barrier()
 
     # Evaluation
     results = {}

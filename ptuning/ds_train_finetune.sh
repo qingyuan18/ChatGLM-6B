@@ -15,6 +15,7 @@ deepspeed --hostfile ./hosts  --master_port $MASTER_PORT main.py \
     --overwrite_cache \
     --model_name_or_path ${MODEL_NAME_OR_PATH} \
     --output_dir ${OUTPUT_DIR} \
+    --model_output_s3_path ${MODEL_OUTPUT_S3_PATH} \
     --overwrite_output_dir \
     --max_source_length 64 \
     --max_target_length 64 \
@@ -22,7 +23,7 @@ deepspeed --hostfile ./hosts  --master_port $MASTER_PORT main.py \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --predict_with_generate \
-    --max_steps 300 \
+    --max_steps ${TRAIN_STEPS} \
     --logging_steps 10 \
     --save_steps 300 \
     --learning_rate $LR \
