@@ -6,8 +6,7 @@ CURRENT_HOST="${SM_CURRENT_HOST}"
 MASTER_PORT=$(shuf -n 1 -i 10000-65535)
 export NCCL_SOCKET_IFNAME="eth0"
 
-if [ "${CURRENT_HOST}" = "${SM_MASTER}" ]; then
-  deepspeed --hostfile ./hosts  --master_port $MASTER_PORT main.py \
+deepspeed --num_gpus=$NUM_GPUS  --master_port $MASTER_PORT main.py \
     --deepspeed deepspeed.json \
     --do_train \
     --train_file $TRAIN_DATASET \
@@ -30,4 +29,4 @@ if [ "${CURRENT_HOST}" = "${SM_MASTER}" ]; then
     --save_steps ${TRAIN_STEPS} \
     --learning_rate $LR \
     --fp16
-fi
+

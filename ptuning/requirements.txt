@@ -8,3 +8,7 @@ sentencepiece
 accelerate
 datasets
 huggingface
+jieba
+rouge_chinese
+nltk
+deepspeed==0.8.0
