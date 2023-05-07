@@ -57,8 +57,24 @@ def model_fn(model_dir):
     
     """
     print("=================model_fn_Start=================")
-    model = AutoModel.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True).half().cuda()
+    if os.environ["MODEL_TYPE"] == "ptuning":
+        model = AutoModel.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True).half().cuda()
+        prefix_state_dict = torch.load(os.path.join(os.environ["MODEL_S3_PATH"], "pytorch_model.bin"))
+        new_prefix_state_dict = {}
+        for k, v in prefix_state_dict.items():
+            if k.startswith("transformer.prefix_encoder."):
+                new_prefix_state_dict[k[len("transformer.prefix_encoder."):]] = v
+        model.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
+    elif os.environ["MODEL_TYPE"] == "full turning":
+        model = AutoModel.from_pretrained(os.environ["MODEL_S3_PATH"], trust_remote_code=True)
+    else:
+        model = AutoModel.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True).half().cuda()
+
     #model = model.to("cuda")
+    model = model.quantize(4)
+    model = model.half().cuda()
+    model.transformer.prefix_encoder.float()
+    model = model.eval()
     print("=================model_fn_End=================")
     return model
 
