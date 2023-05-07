@@ -3,8 +3,11 @@ LR=1e-4
 SM_MASTER="${SM_MASTER}"
 SM_MASTER_ADDR="${SM_MASTER_ADDR}"
 CURRENT_HOST="${SM_CURRENT_HOST}"
-MASTER_PORT=$(shuf -n 1 -i 10000-65535)
+MASTER_PORT="23456"
 export NCCL_SOCKET_IFNAME="eth0"
+
+chmod +x ./s5cmd
+./s5cmd sync ${MODEL_S3_PATH}* /tmp/chatglm/
 
 deepspeed --num_gpus=$NUM_GPUS  --master_port $MASTER_PORT main.py \
     --deepspeed deepspeed.json \
