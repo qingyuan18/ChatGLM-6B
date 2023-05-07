@@ -1,3 +1,4 @@
+#!/bin/bash
 WORKING_DIR=/opt/ml/code/ChatGLM-6B/ptuning
 SM_WORKING_DIR=/opt/ml/model
 
@@ -23,9 +24,9 @@ LOG_FILE="${SAVE_PATH}/log.txt"
 
 #Set the path of your deepspeed config file.
 DS_CONFIG="${WORKING_DIR}/deepspeed.json"
-if [ "${CURRENT_HOST}" = "${SM_MASTER}" ]; then
-  OPTS="""--deepspeed --deepspeed_config ${WORKING_DIR}/deepspeed.json
+OPTS="""--deepspeed --deepspeed_config ${WORKING_DIR}/deepspeed.json
     --do_train
+    --train_mutipl
     --train_file $TRAIN_DATASET
     --test_file $TEST_DATASET
     --prompt_column ${PROMPT_COLUMN}
@@ -46,8 +47,7 @@ if [ "${CURRENT_HOST}" = "${SM_MASTER}" ]; then
     --save_steps ${TRAIN_STEPS}
     --learning_rate $LR
     --fp16"""
-  CMD="python -m torch.distributed.launch ${DISTRIBUTED_ARGS} ${WORKING_DIR}/main.py ${OPTS}"
-  echo ${CMD}
-  mkdir -p ${SAVE_PATH}
-  ${CMD} 2>&1 | tee ${SAVE_PATH}/train_log
-fi
+CMD="python -m torch.distributed.launch ${DISTRIBUTED_ARGS} ${WORKING_DIR}/main.py ${OPTS}"
+echo ${CMD}
+mkdir -p ${SAVE_PATH}
+${CMD} 2>&1 | tee ${SAVE_PATH}/train_log
