@@ -33,6 +33,7 @@ if __name__ == "__main__":
     os.environ['OUTPUT_DIR'] = str(os.environ['OUTPUT_DIR'])
     os.environ['MODEL_OUTPUT_S3_PATH'] = str(os.environ['MODEL_OUTPUT_S3_PATH'])
 
+    #os.environ['NODE_NUMBER'] = str(os.environ['NODE_NUMBER'])
     os.environ['NODE_INDEX'] = str(host_rank)
     os.environ['SM_MASTER'] = str(master)
     os.environ['SM_MASTER_ADDR'] = str(master_addr)
