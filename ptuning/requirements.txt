@@ -1,5 +1,6 @@
 protobuf
-git+https://github.com/huggingface/transformers.git@68d640f7c368bcaaaecfc678f11908ebbd3d6176
+#git+https://github.com/huggingface/transformers.git@68d640f7c368bcaaaecfc678f11908ebbd3d6176
+transformers==4.28.0
 cpm_kernels
 torch>=1.10
 gradio
@@ -11,4 +12,4 @@ huggingface
 jieba
 rouge_chinese
 nltk
-deepspeed==0.7.0
+deepspeed==0.8.3
