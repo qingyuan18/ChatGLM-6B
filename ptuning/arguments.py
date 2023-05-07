@@ -7,12 +7,12 @@ class ModelArguments:
     """
     Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
     """
-        
+
     model_output_s3_path: str = field(
         metadata={"help": "Path to model saved in s3 path using s5cmd utily"}
     )
-    
-        
+
+
     model_name_or_path: str = field(
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
@@ -115,6 +115,9 @@ class DataTrainingArguments:
     train_simple: bool = field(
         default=False, metadata={"help": "whether use single node single GPU fine tuning"}
     )
+    train_mutipl: bool = field(
+        default=False, metadata={"help": "whether use mutiple node mutiple GPU fine tuning"}
+    )
     preprocessing_num_workers: Optional[int] = field(
         default=None,
         metadata={"help": "The number of processes to use for the preprocessing."},
@@ -215,7 +218,7 @@ class DataTrainingArguments:
         },
     )
 
-    
+
 
     def __post_init__(self):
         if self.dataset_name is None and self.train_file is None and self.validation_file is None and self.test_file is None:
