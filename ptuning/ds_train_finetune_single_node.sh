@@ -9,7 +9,7 @@ export NCCL_SOCKET_IFNAME="eth0"
 chmod +x ./s5cmd
 ./s5cmd sync ${MODEL_S3_PATH}* /tmp/chatglm/
 
-deepspeed --num_gpus=$NUM_GPUS  --master_port $MASTER_PORT main.py \
+deepspeed --num_gpus=$NUM_GPUS  --master_port $MASTER_PORT main_tuning.py \
     --deepspeed deepspeed.json \
     --do_train \
     --train_file $TRAIN_DATASET \
@@ -17,7 +17,7 @@ deepspeed --num_gpus=$NUM_GPUS  --master_port $MASTER_PORT main.py \
     --prompt_column ${PROMPT_COLUMN} \
     --response_column ${RESPONSE_COLUMN} \
     --overwrite_cache \
-    --model_name_or_path ${MODEL_NAME_OR_PATH} \
+    --model_name_or_path /tmp/chatglm/  \
     --output_dir ${OUTPUT_DIR} \
     --model_output_s3_path ${MODEL_OUTPUT_S3_PATH} \
     --overwrite_output_dir \

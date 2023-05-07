@@ -28,7 +28,7 @@ LOG_FILE="${SAVE_PATH}/log.txt"
 
 #Set the path of your deepspeed config file.
 DS_CONFIG="${WORKING_DIR}/deepspeed.json"
-#if [ "${CURRENT_HOST}" = "${SM_MASTER}" ]; then
+
   OPTS=""" --deepspeed ${WORKING_DIR}/deepspeed.json 
     --do_train 
     --train_mutipl 
@@ -52,8 +52,10 @@ DS_CONFIG="${WORKING_DIR}/deepspeed.json"
     --save_steps ${TRAIN_STEPS} 
     --learning_rate $LR 
     --fp16"""
-  CMD="python -m torch.distributed.launch ${DISTRIBUTED_ARGS} ${WORKING_DIR}/main.py ${OPTS}"
+  CMD="python -m torch.distributed.launch ${DISTRIBUTED_ARGS} ${WORKING_DIR}/main_tuning.py ${OPTS}"
+  CMD="deepspeed --hostfile ./hosts --master_port $MASTER_PORT ${WORKING_DIR}/main_tuning.py ${OPTS}"
   echo ${CMD}
   mkdir -p ${SAVE_PATH}
+if [ "${CURRENT_HOST}" = "${SM_MASTER}" ]; then  
   ${CMD} 2>&1 | tee ${SAVE_PATH}/train_log
-#fi
+fi

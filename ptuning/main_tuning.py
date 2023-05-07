@@ -60,13 +60,13 @@ def main():
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
 
     ## if mutil-node train , set torch.distribute initial ###########
-    if data_args.train_mutipl:
-        # Environment variables set by torch.distributed.launch
-        LOCAL_RANK = int(os.environ['LOCAL_RANK'])
-        WORLD_SIZE = int(os.environ['WORLD_SIZE'])
-        WORLD_RANK = int(os.environ['RANK'])
-        
-        dist.init_process_group(backend='nccl', rank=WORLD_RANK, world_size=WORLD_SIZE)
+    #if data_args.train_mutipl:
+    #    # Environment variables set by torch.distributed.launch
+    #    LOCAL_RANK = int(os.environ['LOCAL_RANK'])
+    #    WORLD_SIZE = int(os.environ['WORLD_SIZE'])
+    #    WORLD_RANK = int(os.environ['RANK'])
+    #    
+    #    dist.init_process_group(backend='nccl', rank=WORLD_RANK, world_size=WORLD_SIZE)
     
     
     # Setup logging
@@ -134,7 +134,8 @@ def main():
                 new_prefix_state_dict[k[len("transformer.prefix_encoder."):]] = v
         model.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
     else:
-        model = AutoModel.from_pretrained(model_args.model_name_or_path, config=config, trust_remote_code=True)
+        #model = AutoModel.from_pretrained(model_args.model_name_or_path, config=config, trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
 
     if model_args.quantization_bit is not None:
         print(f"Quantized to {model_args.quantization_bit} bit")
@@ -408,6 +409,8 @@ def main():
                 torch.distributed.barrier()
             else:
                 deepspeed.utils.comm.synchronize()
+        else:
+            os.system("./s5cmd sync {0} {1}".format(save_model_dir, os.environ['MODEL_OUTPUT_S3_PATH']))
 
     # Evaluation
     results = {}

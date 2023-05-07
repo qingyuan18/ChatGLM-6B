@@ -32,7 +32,17 @@ import torch
 
 from torch import autocast
 #from transformers import T5Tokenizer, T5ForConditionalGeneration
-from transformers import AutoTokenizer, AutoModel
+import transformers
+from transformers import (
+    AutoConfig,
+    AutoModel,
+    AutoTokenizer,
+    AutoTokenizer,
+    DataCollatorForSeq2Seq,
+    HfArgumentParser,
+    Seq2SeqTrainingArguments,
+    set_seed,
+)
 
 tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True)
 
