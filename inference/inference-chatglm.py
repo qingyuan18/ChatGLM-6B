@@ -46,6 +46,21 @@ from transformers import (
 
 tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True)
 
+s3_client = boto3.client('s3')
+
+def get_bucket_and_key(s3uri):
+    pos = s3uri.find('/', 5)
+    bucket = s3uri[5 : pos]
+    key = s3uri[pos + 1 : ]
+    return bucket, key
+
+def download_model(model_path,target_path):
+    bucket, key = get_bucket_and_key(model_path)
+    s3_client.download_file(
+        bucket,
+        key,
+        target_path
+    )
 
 def preprocess(text):
     text = text.replace("\n", "\\n").replace("\t", "\\t")
@@ -62,21 +77,22 @@ def answer(text, sample=True, top_p=0.45, temperature=0.7,model=None):
 
 
 def model_fn(model_dir):
-    """
-    Load the model for inference,load model from os.environ['model_name'],diffult use stabilityai/stable-diffusion-2
-    """
     print("=================model_fn_Start=================")
-    os.system("./s5cmd sync {0} {1}".format(os.environ['MODEL_S3_PATH'],"/tmp/model/"))
+    model_s3_path = os.environ['MODEL_S3_PATH']
+    os.system("cp ./code/s5cmd  /tmp/ && chmod +x /tmp/s5cmd")
+    os.system("/tmp/s5cmd sync {0} {1}".format(model_s3_path+"*","/tmp/model/"))
     if os.environ["MODEL_TYPE"] == "ptuning":
-        model = AutoModel.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True).half().cuda()
+        config = AutoConfig.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True, pre_seq_len=128)
+        model = AutoModel.from_pretrained("THUDM/chatglm-6b", config=config, trust_remote_code=True)
         prefix_state_dict = torch.load(os.path.join("/tmp/model/", "pytorch_model.bin"))
         new_prefix_state_dict = {}
         for k, v in prefix_state_dict.items():
             if k.startswith("transformer.prefix_encoder."):
                 new_prefix_state_dict[k[len("transformer.prefix_encoder."):]] = v
         model.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
+
     elif os.environ["MODEL_TYPE"] == "full turning":
-        model = AutoModel.from_pretrained(os.environ["MODEL_S3_PATH"], trust_remote_code=True)
+        model = AutoModel.from_pretrained(model_dir, trust_remote_code=True)
     else:
         model = AutoModel.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True).half().cuda()
 
