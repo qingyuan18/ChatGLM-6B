@@ -57,19 +57,19 @@ def postprocess(text):
 def answer(text, sample=True, top_p=0.45, temperature=0.7,model=None):
     text = preprocess(text)
     response, history = model.chat(tokenizer, text, history=[])
-    
+
     return postprocess(response)
 
 
 def model_fn(model_dir):
     """
     Load the model for inference,load model from os.environ['model_name'],diffult use stabilityai/stable-diffusion-2
-    
     """
     print("=================model_fn_Start=================")
+    os.system("./s5cmd sync {0} {1}".format(os.environ['MODEL_S3_PATH'],"/tmp/model/"))
     if os.environ["MODEL_TYPE"] == "ptuning":
         model = AutoModel.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True).half().cuda()
-        prefix_state_dict = torch.load(os.path.join(os.environ["MODEL_S3_PATH"], "pytorch_model.bin"))
+        prefix_state_dict = torch.load(os.path.join("/tmp/model/", "pytorch_model.bin"))
         new_prefix_state_dict = {}
         for k, v in prefix_state_dict.items():
             if k.startswith("transformer.prefix_encoder."):
@@ -110,15 +110,15 @@ def predict_fn(input_data, model):
     Apply model to the incoming request
     """
     print("=================predict_fn=================")
-   
+
     print('input_data: ', input_data)
-    
+
 
     try:
         result=answer(input_data['ask'], model=model)
         print(f'====result {result}====')
         return result
-        
+
     except Exception as ex:
         traceback.print_exc(file=sys.stdout)
         print(f"=================Exception================={ex}")

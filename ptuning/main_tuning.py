@@ -65,7 +65,7 @@ def main():
     #    LOCAL_RANK = int(os.environ['LOCAL_RANK'])
     #    WORLD_SIZE = int(os.environ['WORLD_SIZE'])
     #    WORLD_RANK = int(os.environ['RANK'])
-    #    
+    #
     #    dist.init_process_group(backend='nccl', rank=WORLD_RANK, world_size=WORLD_SIZE)
 
 
