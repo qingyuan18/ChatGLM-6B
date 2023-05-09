@@ -17,7 +17,7 @@ deepspeed --num_gpus=$NUM_GPUS  --master_port $MASTER_PORT main_tuning.py \
     --prompt_column ${PROMPT_COLUMN} \
     --response_column ${RESPONSE_COLUMN} \
     --overwrite_cache \
-    --model_name_or_path /tmp/chatglm/  \
+    --model_name_or_path ${MODEL_NAME_OR_PATH}   \
     --output_dir ${OUTPUT_DIR} \
     --model_output_s3_path ${MODEL_OUTPUT_S3_PATH} \
     --overwrite_output_dir \
