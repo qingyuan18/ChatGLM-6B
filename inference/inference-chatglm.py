@@ -46,22 +46,6 @@ from transformers import (
 
 tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True)
 
-s3_client = boto3.client('s3')
-
-def get_bucket_and_key(s3uri):
-    pos = s3uri.find('/', 5)
-    bucket = s3uri[5 : pos]
-    key = s3uri[pos + 1 : ]
-    return bucket, key
-
-def download_model(model_path,target_path):
-    bucket, key = get_bucket_and_key(model_path)
-    s3_client.download_file(
-        bucket,
-        key,
-        target_path
-    )
-
 def preprocess(text):
     text = text.replace("\n", "\\n").replace("\t", "\\t")
     return text
@@ -71,7 +55,8 @@ def postprocess(text):
 
 def answer(text, sample=True, top_p=0.45, temperature=0.7,model=None):
     text = preprocess(text)
-    response, history = model.chat(tokenizer, text, history=[])
+    response, history = model.chat(tokenizer, text, history=[],max_length=100, top_p=top_p,
+                                   temperature=temperature)
 
     return postprocess(response)
 
@@ -79,6 +64,7 @@ def answer(text, sample=True, top_p=0.45, temperature=0.7,model=None):
 def model_fn(model_dir):
     print("=================model_fn_Start=================")
     model_s3_path = os.environ['MODEL_S3_PATH']
+    print("=================model s3 path=================="+model_s3_path)
     os.system("cp ./code/s5cmd  /tmp/ && chmod +x /tmp/s5cmd")
     os.system("/tmp/s5cmd sync {0} {1}".format(model_s3_path+"*","/tmp/model/"))
     if os.environ["MODEL_TYPE"] == "ptuning":
@@ -92,14 +78,17 @@ def model_fn(model_dir):
         model.transformer.prefix_encoder.load_state_dict(new_prefix_state_dict)
 
     elif os.environ["MODEL_TYPE"] == "full turning":
-        model = AutoModel.from_pretrained(model_dir, trust_remote_code=True)
+        print("====================load full turning=================")
+        config = AutoConfig.from_pretrained("/tmp/model/", trust_remote_code=True, pre_seq_len=128)
+        model = AutoModel.from_pretrained("/tmp/model/", trust_remote_code=True)
     else:
-        model = AutoModel.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True).half().cuda()
+        print("====================load normal ======================")
+        config = AutoConfig.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True, pre_seq_len=128)
+        model = AutoModel.from_pretrained("THUDM/chatglm-6b", trust_remote_code=True)
 
     #model = model.to("cuda")
     model = model.quantize(4)
     model = model.half().cuda()
-    model.transformer.prefix_encoder.float()
     model = model.eval()
     print("=================model_fn_End=================")
     return model
