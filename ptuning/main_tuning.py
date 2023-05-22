@@ -25,7 +25,7 @@ import json
 
 import numpy as np
 from datasets import load_dataset
-import jieba 
+import jieba
 from rouge_chinese import Rouge
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import torch
@@ -67,8 +67,8 @@ def main():
     #    WORLD_RANK = int(os.environ['RANK'])
     #    
     #    dist.init_process_group(backend='nccl', rank=WORLD_RANK, world_size=WORLD_SIZE)
-    
-    
+
+
     # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -115,6 +115,12 @@ def main():
         cache_dir=model_args.cache_dir,
         use_auth_token=True if model_args.use_auth_token else None,
     )
+
+    # if s3 path model, use s5cmd to download the model to /tmp/orignal/ for model load
+    if "s3" in model_args.model_name_or_path:
+        os.system("cp ./s5cmd  /tmp/ && chmod +x /tmp/s5cmd")
+        os.system("/tmp/s5cmd sync {0} {1}".format(model_args.model_name_or_path+"*","/tmp/orignal/"))
+        model_args.model_name_or_path = "/tmp/orignal/"
 
     # Load pretrained model and tokenizer
     config = AutoConfig.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
@@ -166,7 +172,7 @@ def main():
     prompt_column = data_args.prompt_column
     response_column = data_args.response_column
     history_column = data_args.history_column
-    
+
     # Temporarily set max_target_length for training.
     max_target_length = data_args.max_target_length
 
@@ -233,7 +239,7 @@ def main():
                 context_length = input_ids.index(tokenizer.bos_token_id)
                 mask_position = context_length - 1
                 labels = [-100] * context_length + input_ids[mask_position+1:]
-                
+
                 pad_len = max_seq_length - len(input_ids)
                 input_ids = input_ids + [tokenizer.pad_token_id] * pad_len
                 labels = labels + [tokenizer.pad_token_id] * pad_len
@@ -244,7 +250,7 @@ def main():
                 model_inputs["labels"].append(labels)
 
         return model_inputs
-    
+
     def print_dataset_example(example):
         print("input_ids",example["input_ids"])
         print("inputs", tokenizer.decode(example["input_ids"]))
@@ -340,7 +346,7 @@ def main():
             rouge = Rouge()
             scores = rouge.get_scores(' '.join(hypothesis) , ' '.join(reference))
             result = scores[0]
-            
+
             for k, v in result.items():
                 score_dict[k].append(round(v["f"] * 100, 4))
             bleu_score = sentence_bleu([list(label)], list(pred), smoothing_function=SmoothingFunction().method3)
@@ -397,16 +403,16 @@ def main():
         tokenizer.save_pretrained(save_model_dir)
         trainer.save_model(save_model_dir)
         print("------model is saved!-----")
-        
+
         #Note: if deepspeed fine tuning ,we just use the rank 0 process to upload the trained model assets to S3 by s5cmd command.
         if data_args.train_simple == False:
             WORLD_RANK = int(os.environ['RANK'])
             print("world_rank==="+str(WORLD_RANK))
             if WORLD_RANK == 0:
                 os.system("./s5cmd sync {0} {1}".format(save_model_dir, os.environ['MODEL_OUTPUT_S3_PATH']))
-    
+
             #Note: we should sync with every ranker and ensure rank 0 uploading the model assets successfully. 
-            torch.distributed.barrier()            
+            torch.distributed.barrier()
         else:
             os.system("./s5cmd sync {0} {1}".format(save_model_dir, os.environ['MODEL_OUTPUT_S3_PATH']))
 
